@@ -1,0 +1,75 @@
+# Copyright (C) 2021  Christian Berger
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Which Docker image shall be used on the GitLab runner?
+image: registry.git.chalmers.se/courses/dit638/students/docker/docker:19.03.3
+
+# Details about how to connect to the Docker service to run this build.
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+  DOCKER_CLI_EXPERIMENTAL: enabled
+  BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.3.1/buildx-v0.3.1.linux-amd64
+  BUILDX_PLATFORM: linux/amd64,linux/arm/v7,linux/arm/v6
+
+services:
+  - name: registry.git.chalmers.se/courses/dit638/students/docker/docker:19.03.3-dind
+    alias: docker
+
+stages:
+  - build
+  - deploy
+
+# Display information before we start the build.
+before_script:
+  - docker info
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+# This section describes what shall be done to build and test the project.
+build-and-test:  
+  tags:
+    - docker-build
+  stage: build
+  rules: 
+  - if: $CI_COMMIT_TAG == null
+  script:
+    - docker build -f Dockerfile .
+
+# This section describes what shall be done to deploy artefacts from the project.
+release:
+  tags:
+    - docker-build
+  stage: deploy
+  before_script:
+    - mkdir -p $HOME/.docker/cli-plugins/
+    - wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL
+    - chmod a+x $HOME/.docker/cli-plugins/docker-buildx
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker buildx create --use
+    - docker buildx inspect --bootstrap
+    - docker buildx ls
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+
+
+  script:
+    # - docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" .
+    - docker buildx build --platform=${BUILDX_PLATFORM} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" --push .
+    # - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG"
+
+  # The below creates a rule where the deployment stage is executed only on new releases and follows semantic version pattern (vX.Y.Z) Regex taken from https://ihateregex.io/expr/semver/
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-])(?:\.(?:0|[1-9]\d|\d*[a-zA-Z-][0-9a-zA-Z-]))))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+      when: on_success
