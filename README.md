@@ -69,11 +69,14 @@ docker run --rm -ti --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp:/tmp group
 ```
 
 ## Tools 
+ - Linux
  - G++ 
  - Git 
  - CMake
  - Make
  - Docker 
+ - OpenCV
+ - C++
 
 ## Developers 
  - Fayona Cowperthwaite
