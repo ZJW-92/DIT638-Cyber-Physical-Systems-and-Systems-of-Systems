@@ -78,6 +78,11 @@ docker run --rm -ti --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp:/tmp group
  - OpenCV
  - C++
 
+
+## More information: 
+[opendlv-video-h264-decoder](https://github.com/chalmers-revere/opendlv-video-h264-decoder) and [opendlv-vehicle-view](https://github.com/chalmers-revere/opendlv-vehicle-view) which enables playing of [recording files](https://github.com/chalmers-revere).
+
+
 ## Developers 
  - Fayona Cowperthwaite
  - Dominique Deramat
