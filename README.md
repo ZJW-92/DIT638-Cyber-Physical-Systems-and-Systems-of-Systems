@@ -73,9 +73,9 @@ docker run --rm -ti --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp:/tmp group
  - G++ 
  - Git 
  - CMake
- - Make
  - Docker 
  - OpenCV
+ - OpenDLV
  - C++
 
 
